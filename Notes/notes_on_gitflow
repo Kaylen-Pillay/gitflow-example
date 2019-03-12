@@ -1,0 +1,131 @@
+Gitflow, a successful Git branching model.
+
+This branching model works with a central "truth" repo, this repo can
+be thought of as origin - something familiar to all Git users.
+
+Developers pull and push to origin, however when working on a big feature,
+they can also pull and push to another peers branch if they are working
+together before merging to origin.
+
+This model has two main branches with infinite lifetimes:
+    -> master &,
+    -> develop
+
+origin/master is the main branch where the source code of HEAD reflects
+a production-ready state (ALWAYS!).
+
+origin/develop is the main branch where the source code of HEAD reflects
+a state of the latest delivered development changes for the next release
+(ALWAYS!). This is where automatic nightly builds are built from.
+
+At some point when the source code in develop reaches a stable point and
+is ready to be released, the changes should be merged back into master
+and tagged with a version number. More on this at a later stage.
+
+Therefore by definition any anytime changes are merged to master, this
+is a new release. In theory, if we keep to this strict rule, we could
+has a Git hook script to automatically build and roll-out software
+every time there was a commit on master!
+
+Supporting branches have a limited life span and are used to aid parallel
+development between team members, ease tracking of features, prepare
+for production releases and to assist in quickly fixing live production
+problems. These branches are:
+    -> feature branches,
+    -> release branches &,
+    -> hotfix branches
+
+Each of these branches have special and specific purposes and are bound
+to strict rules to which branches the originate from and which branches
+they should merge too.
+
+Feature branches:
+  Branch off:  -> develop
+  Merge into:  -> develop
+  naming convention: Can be named anything except,
+                                  ^master,
+                                  ^develop,
+                                  ^release-* or,
+                                  ^hotfix-*,
+
+These branches are used to develop new features for upcoming or distant
+feature releases. This branch exists as long as the feature is in
+development. This new feature will be merged back into develop when
+complete, or dropped if unsuccessful.
+
+These branches typically live on a developers local repo only and not in
+origin.
+
+  Creating a feature branch:
+      $ git checkout -b myfeature develop
+      `Switched to a new branch "myfeature"`
+
+  Incorporating a finished feature on develop:
+      $ git checkout develop
+      `Switched to branch "develop"`
+
+      $ git merge --no-ff myfeature
+      `Updating ...`
+
+      $ git branch -d myfeature
+      `Deleted branch "myfeature"`
+
+      $ git push origin develop
+
+
+Release branches:
+  Branch off:  -> develop
+  Merge into:  -> develop and master
+  naming convention: release-*
+
+These branches support preparation for a new production release. This
+clears the develop branch to receive future features for the next
+big release.
+
+When develop reaches a state where a release can be made, all new features
+must wait until a release is branched off. This is also the point at which
+a version number is assigned to the release, not earlier.
+
+    Creating a release branch:
+      $ git checkout -b release-0.1 develop
+      `Switched to a new branch "release-0.1"`
+
+      $ ./bump-version.sh 0.3
+      `Files modified successful, version bumped to 0.3`
+
+      $ git add .
+      $ git commit -m "Bumped version number to 0.3"
+
+    Finishing a release branch:
+      $ git checkout master
+      $ git merge --no-ff release-0.3
+      $ git tag -a 0.3
+      $ git checkout develop
+      $ git merge --no-ff release-0.3
+      $ git branch -d release-0.3
+
+Hotfix branches:
+  Branch off:   -> master
+  Merge into:   -> develop and master
+  naming convention: hotfix-*
+
+These branches are unplanned releases that fix a critical bug in
+a production version that must be resolved immediately. We branch off
+the corresponding tag on master that marks the production version.
+
+  Creating a hotfix branch:
+    $ git checkout -b hotfix-0.3.1 master
+    $ ./bump-version.sh 0.3.1
+    $ git add .
+    $ git commit -m "Bumped version number to 0.3.1"
+    ... perform some fixes
+    $ git add .
+    $ git commit -m "Fixed severe production problem"
+
+  Finishing a hotfix branch:
+    $ git checkout master
+    $ git merge --no-ff hotfix-0.3.1
+    $ git tag -a 0.3.1
+    $ git checkout develop
+    $ git merge --no-ff hotfix-0.3.1
+    $ git branch -d hotfix-0.3.1
